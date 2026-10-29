@@ -169,6 +169,22 @@ def mark_continuation_context_input_tokens(
         mark_context_input_tokens(response, response.usage.input_tokens)
 
 
+def normalize_compaction_usage(details: dict[str, int], response_usage: BetaUsage | BetaMessageDeltaUsage) -> None:
+    """Use executor passes before adding compaction, preserving separate advisor pricing."""
+    if not (iterations := response_usage.iterations) or not any(it.type == 'compaction' for it in iterations):
+        return
+    # Gateways can promote whole-invocation usage into the top-level fields. Also replace
+    # any compactor cache split retained from `message_start`, including with zero.
+    message_iterations = [it for it in iterations if it.type in ('message', 'fallback_message')]
+    for key in _COMPACTION_TOKEN_KEYS:
+        total = sum(getattr(it, key) for it in message_iterations)
+        if total or key in details:
+            details[key] = total
+    details['ephemeral_1h_input_tokens'] = sum(
+        it.cache_creation.ephemeral_1h_input_tokens for it in message_iterations if it.cache_creation is not None
+    )
+
+
 def map_usage(
     message: BetaMessage | BetaRawMessageStartEvent | BetaRawMessageDeltaEvent,
     provider: str,
@@ -195,6 +211,7 @@ def map_usage(
     # In streaming, usage appears in different events.
     # The values are cumulative, meaning new values should replace existing ones entirely.
     details = (existing_usage.details if existing_usage else {}) | extract_usage_details(response_usage)
+    normalize_compaction_usage(details, response_usage)
     # The one-hour count is capped at the total it's part of: after a compaction iteration's cache write, the final
     # event resets `cache_creation_input_tokens` without resending the split, so the start event's one-hour count
     # would otherwise survive, both in streamed usage and in a message accumulated from a stream. This assumes a
