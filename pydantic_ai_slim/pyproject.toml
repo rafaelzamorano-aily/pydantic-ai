@@ -2,17 +2,11 @@
 requires = ["hatchling", "uv-dynamic-versioning>=0.7.0"]
 build-backend = "hatchling.build"
 
-[tool.hatch.version]
-source = "uv-dynamic-versioning"
-
-[tool.uv-dynamic-versioning]
-vcs = "git"
-style = "pep440"
-bump = true
-
 [project]
 name = "pydantic-ai-slim"
-dynamic = ["version", "dependencies", "optional-dependencies"]
+# Temporary downstream build of v2.63.0 with the Anthropic compaction usage fix.
+version = "2.63.0+aily.1"
+dynamic = ["dependencies", "optional-dependencies"]
 description = "AI Agent Framework, the Pydantic way, slim package"
 authors = [
     { name = "Douwe Maan", email = "douwe@pydantic.dev" },
@@ -62,7 +56,7 @@ dependencies = [
     "griffelib>=2.0",
     "httpx2>=2.7",
     "pydantic>=2.12",
-    "pydantic-graph=={{ version }}",
+    "pydantic-graph==2.63.0",
     "opentelemetry-api>=1.28.0",
     "typing-inspection>=0.4.0",
     "genai-prices>=0.1.13",
@@ -147,7 +141,7 @@ mcp = ["fastmcp-slim[client]>=3.3.0,<5"]
 # `fastmcp-tasks`'s transitive pin alone does not.
 mcp-tasks = ["fastmcp-tasks>=4.0.0b1,<5", "fastmcp-slim[client]>=4.0.0b1,<5"]
 # Evals
-evals = ["pydantic-evals=={{ version }}"]
+evals = ["pydantic-evals==2.63.0"]
 # UI
 ui = ["starlette>=0.46.2"]
 # AG-UI
